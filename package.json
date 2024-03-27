@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dayjs": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.6.3",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
