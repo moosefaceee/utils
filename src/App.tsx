@@ -1,5 +1,5 @@
-function App() {
-  return <></>;
-}
+import StreamCheck from './StreamCheck';
 
-export default App;
+export default function App() {
+  return <StreamCheck />;
+}
