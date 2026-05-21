@@ -4,20 +4,13 @@ import type { SearchResponse, Show } from '../types/streaming';
 const API_KEY =
   import.meta.env.VITE_MOTN_API_KEY ?? 'motn-key-v4-lFUTAaJ9hRo4S2B8y5LGz8CBCIkRVwcp';
 const BASE_URL = 'https://api.movieofthenight.com';
+const TIMEOUT_MS = 6000;
 
-// MOTN blocks direct browser fetch (returns 421). Try proxies in sequence with timeout.
-const PROXIES = [
-  (url: string) => `https://corsproxy.io/?${url}`,
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
-
-const TIMEOUT_MS = 8000;
-
-async function fetchWithTimeout(url: string, headers: Record<string, string>): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    return await fetch(url, { headers, signal: controller.signal });
+    return await fetch(url, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
@@ -26,21 +19,28 @@ async function fetchWithTimeout(url: string, headers: Record<string, string>): P
 export async function searchShows(title: string, country = 'za'): Promise<Show[]> {
   if (!title.trim()) return [];
 
-  const params = new URLSearchParams({
-    country,
-    title: title.trim(),
-    series_granularity: 'show',
-    output_language: 'en',
-  });
+  const base = { country, title: title.trim(), series_granularity: 'show', output_language: 'en' };
 
-  const target = `${BASE_URL}/shows/search/title?${params}`;
+  // Simple request: key in query string — browser sends no preflight OPTIONS.
+  // Non-simple request: key in header — browser sends OPTIONS first; proxy must echo it back.
+  const urlKeyInQuery = `${BASE_URL}/shows/search/title?${new URLSearchParams({ ...base, 'x-api-key': API_KEY })}`;
+  const urlNoKey      = `${BASE_URL}/shows/search/title?${new URLSearchParams(base)}`;
 
-  let lastError: Error = new Error('All proxies timed out — try again');
-  for (const makeUrl of PROXIES) {
+  const attempts: Array<{ url: string; init: RequestInit }> = [
+    // Attempt 1 — simple request, no preflight
+    { url: `https://corsproxy.io/?${urlKeyInQuery}`, init: {} },
+    // Attempt 2 — header auth via allorigins (different proxy, same trick)
+    { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(urlKeyInQuery)}`, init: {} },
+    // Attempt 3 — header auth fallback
+    { url: `https://corsproxy.io/?${urlNoKey}`, init: { headers: { 'x-api-key': API_KEY } } },
+  ];
+
+  let lastError: Error = new Error('Search failed — all attempts timed out');
+  for (const attempt of attempts) {
     try {
-      const res = await fetchWithTimeout(makeUrl(target), { 'x-api-key': API_KEY });
+      const res = await fetchWithTimeout(attempt.url, attempt.init);
       if (!res.ok) {
-        lastError = new Error(`API error ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        lastError = new Error(`${res.status} ${res.statusText}: ${(await res.text()).slice(0, 120)}`);
         continue;
       }
       const data: SearchResponse = await res.json();
