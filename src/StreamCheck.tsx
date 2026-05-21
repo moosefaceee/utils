@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent, type CSSProperties } from 'react';
+import { useState, useRef, useEffect, type FormEvent, type CSSProperties } from 'react';
 import { searchShows } from './services/streamingApi';
 import type { Show, StreamingOption } from './types/streaming';
 
@@ -154,9 +154,16 @@ export default function StreamCheck() {
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadSecs, setLoadSecs] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!loading) { setLoadSecs(0); return; }
+    const t = setInterval(() => setLoadSecs((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [loading]);
 
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
@@ -210,7 +217,7 @@ export default function StreamCheck() {
             ...(loading || !query.trim() ? styles.searchBtnDisabled : {}),
           }}
         >
-          {loading ? '…' : 'Search'}
+          {loading ? `${loadSecs}s…` : 'Search'}
         </button>
       </form>
 
