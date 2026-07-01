@@ -270,7 +270,7 @@ export default function StreamCheck() {
           }}
           aria-pressed={onlyAvailable}
         >
-          Only available in ZA
+          Available to stream
         </button>
       </div>
 
