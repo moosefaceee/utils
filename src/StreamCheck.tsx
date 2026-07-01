@@ -154,6 +154,7 @@ export default function StreamCheck() {
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState<Show[]>([]);
   const [filter, setFilter] = useState<'all' | 'movie' | 'series'>('all');
+  const [onlyAvailable, setOnlyAvailable] = useState(true);
   const [loading, setLoading] = useState(false);
   const [loadSecs, setLoadSecs] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -183,10 +184,12 @@ export default function StreamCheck() {
     }
   }
 
-  const movieCount  = shows.filter((s) => s.showType === 'movie').length;
-  const seriesCount = shows.filter((s) => s.showType === 'series').length;
-  const visible = filter === 'all' ? shows : shows.filter((s) => s.showType === filter);
-  const zaAvailable = visible.filter((s) => (s.streamingOptions?.za?.length ?? 0) > 0).length;
+  const hasZA = (s: Show) => (s.streamingOptions?.za?.length ?? 0) > 0;
+  const pool = onlyAvailable ? shows.filter(hasZA) : shows;
+  const movieCount  = pool.filter((s) => s.showType === 'movie').length;
+  const seriesCount = pool.filter((s) => s.showType === 'series').length;
+  const visible = filter === 'all' ? pool : pool.filter((s) => s.showType === filter);
+  const zaAvailable = visible.filter(hasZA).length;
 
   return (
     <div style={styles.root}>
@@ -228,7 +231,7 @@ export default function StreamCheck() {
       {/* filter tabs — always visible */}
       <div style={styles.filterRow}>
         {([
-          { key: 'all',    label: 'All',    count: shows.length },
+          { key: 'all',    label: 'All',    count: pool.length },
           { key: 'movie',  label: 'Movies', count: movieCount },
           { key: 'series', label: 'Series', count: seriesCount },
         ] as const).map((tab) => {
@@ -255,6 +258,24 @@ export default function StreamCheck() {
             </button>
           );
         })}
+      </div>
+
+      {/* availability toggle */}
+      <div style={styles.toggleRow}>
+        <button
+          onClick={() => setOnlyAvailable((v) => !v)}
+          style={{
+            ...styles.toggle,
+            ...(onlyAvailable ? styles.toggleOn : {}),
+          }}
+          aria-pressed={onlyAvailable}
+        >
+          <span style={{
+            ...styles.toggleDot,
+            ...(onlyAvailable ? styles.toggleDotOn : {}),
+          }} />
+          Only show available in ZA
+        </button>
       </div>
 
       {/* status bar */}
@@ -377,8 +398,46 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     gap: 8,
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
     flexWrap: 'wrap',
+  },
+  toggleRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  toggle: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    background: 'transparent',
+    border: `1.5px solid ${C.border}`,
+    color: C.muted,
+    borderRadius: 20,
+    padding: '5px 14px 5px 6px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  toggleOn: {
+    background: 'rgba(212,245,66,0.10)',
+    borderColor: 'rgba(212,245,66,0.4)',
+    color: C.accent,
+  },
+  toggleDot: {
+    width: 16,
+    height: 16,
+    borderRadius: '50%',
+    background: '#2a2a2a',
+    border: `2px solid ${C.border}`,
+    transition: 'all 0.15s',
+    boxShadow: 'inset 0 0 0 3px transparent',
+  },
+  toggleDotOn: {
+    background: C.accent,
+    borderColor: C.accent,
+    boxShadow: 'inset 0 0 0 3px #0d0d0d',
   },
   filterTab: {
     display: 'inline-flex',
