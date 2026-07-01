@@ -260,21 +260,17 @@ export default function StreamCheck() {
         })}
       </div>
 
-      {/* availability toggle */}
+      {/* availability toggle — same style as filter tabs */}
       <div style={styles.toggleRow}>
         <button
           onClick={() => setOnlyAvailable((v) => !v)}
           style={{
-            ...styles.toggle,
-            ...(onlyAvailable ? styles.toggleOn : {}),
+            ...styles.filterTab,
+            ...(onlyAvailable ? styles.filterTabActive : {}),
           }}
           aria-pressed={onlyAvailable}
         >
-          <span style={{
-            ...styles.toggleDot,
-            ...(onlyAvailable ? styles.toggleDotOn : {}),
-          }} />
-          Only show available in ZA
+          Only available in ZA
         </button>
       </div>
 
@@ -405,39 +401,6 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     justifyContent: 'center',
     marginBottom: 16,
-  },
-  toggle: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    background: 'transparent',
-    border: `1.5px solid ${C.border}`,
-    color: C.muted,
-    borderRadius: 20,
-    padding: '5px 14px 5px 6px',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  },
-  toggleOn: {
-    background: 'rgba(212,245,66,0.10)',
-    borderColor: 'rgba(212,245,66,0.4)',
-    color: C.accent,
-  },
-  toggleDot: {
-    width: 16,
-    height: 16,
-    borderRadius: '50%',
-    background: '#2a2a2a',
-    border: `2px solid ${C.border}`,
-    transition: 'all 0.15s',
-    boxShadow: 'inset 0 0 0 3px transparent',
-  },
-  toggleDotOn: {
-    background: C.accent,
-    borderColor: C.accent,
-    boxShadow: 'inset 0 0 0 3px #0d0d0d',
   },
   filterTab: {
     display: 'inline-flex',
