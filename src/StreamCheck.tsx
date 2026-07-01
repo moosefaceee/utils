@@ -225,36 +225,37 @@ export default function StreamCheck() {
         </button>
       </form>
 
-      {/* filter tabs */}
-      {searched && !loading && !error && shows.length > 0 && (
-        <div style={styles.filterRow}>
-          {([
-            { key: 'all',    label: 'All',    count: shows.length },
-            { key: 'movie',  label: 'Movies', count: movieCount },
-            { key: 'series', label: 'Series', count: seriesCount },
-          ] as const).map((tab) => {
-            const active = filter === tab.key;
-            const disabled = tab.count === 0;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => !disabled && setFilter(tab.key)}
-                disabled={disabled}
-                style={{
-                  ...styles.filterTab,
-                  ...(active ? styles.filterTabActive : {}),
-                  ...(disabled ? styles.filterTabDisabled : {}),
-                }}
-              >
-                {tab.label}
+      {/* filter tabs — always visible */}
+      <div style={styles.filterRow}>
+        {([
+          { key: 'all',    label: 'All',    count: shows.length },
+          { key: 'movie',  label: 'Movies', count: movieCount },
+          { key: 'series', label: 'Series', count: seriesCount },
+        ] as const).map((tab) => {
+          const active = filter === tab.key;
+          // Only disable when we have search results AND this bucket is empty
+          const disabled = searched && shows.length > 0 && tab.count === 0;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => !disabled && setFilter(tab.key)}
+              disabled={disabled}
+              style={{
+                ...styles.filterTab,
+                ...(active ? styles.filterTabActive : {}),
+                ...(disabled ? styles.filterTabDisabled : {}),
+              }}
+            >
+              {tab.label}
+              {searched && shows.length > 0 && (
                 <span style={{ ...styles.filterCount, ...(active ? styles.filterCountActive : {}) }}>
                   {tab.count}
                 </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* status bar */}
       {searched && !loading && !error && (
