@@ -153,6 +153,7 @@ function ShowCard({ show }: { show: Show }) {
 export default function StreamCheck() {
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState<Show[]>([]);
+  const [filter, setFilter] = useState<'all' | 'movie' | 'series'>('all');
   const [loading, setLoading] = useState(false);
   const [loadSecs, setLoadSecs] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -182,7 +183,10 @@ export default function StreamCheck() {
     }
   }
 
-  const zaAvailable = shows.filter((s) => (s.streamingOptions?.za?.length ?? 0) > 0).length;
+  const movieCount  = shows.filter((s) => s.showType === 'movie').length;
+  const seriesCount = shows.filter((s) => s.showType === 'series').length;
+  const visible = filter === 'all' ? shows : shows.filter((s) => s.showType === filter);
+  const zaAvailable = visible.filter((s) => (s.streamingOptions?.za?.length ?? 0) > 0).length;
 
   return (
     <div style={styles.root}>
@@ -221,12 +225,43 @@ export default function StreamCheck() {
         </button>
       </form>
 
+      {/* filter tabs */}
+      {searched && !loading && !error && shows.length > 0 && (
+        <div style={styles.filterRow}>
+          {([
+            { key: 'all',    label: 'All',    count: shows.length },
+            { key: 'movie',  label: 'Movies', count: movieCount },
+            { key: 'series', label: 'Series', count: seriesCount },
+          ] as const).map((tab) => {
+            const active = filter === tab.key;
+            const disabled = tab.count === 0;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => !disabled && setFilter(tab.key)}
+                disabled={disabled}
+                style={{
+                  ...styles.filterTab,
+                  ...(active ? styles.filterTabActive : {}),
+                  ...(disabled ? styles.filterTabDisabled : {}),
+                }}
+              >
+                {tab.label}
+                <span style={{ ...styles.filterCount, ...(active ? styles.filterCountActive : {}) }}>
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* status bar */}
       {searched && !loading && !error && (
         <p style={styles.statusBar}>
           {shows.length === 0
             ? 'No results found.'
-            : `${shows.length} result${shows.length !== 1 ? 's' : ''} · `}
+            : `${visible.length} showing · `}
           {shows.length > 0 && (
             <span>
               <span style={{ color: C.accent }}>{zaAvailable}</span> available in ZA
@@ -243,9 +278,9 @@ export default function StreamCheck() {
       )}
 
       {/* results grid */}
-      {shows.length > 0 && (
+      {visible.length > 0 && (
         <div style={styles.grid}>
-          {shows.map((show) => (
+          {visible.map((show) => (
             <ShowCard key={show.id} show={show} />
           ))}
         </div>
@@ -336,6 +371,50 @@ const styles: Record<string, CSSProperties> = {
   searchBtnDisabled: {
     opacity: 0.4,
     cursor: 'not-allowed',
+  },
+  filterRow: {
+    display: 'flex',
+    gap: 8,
+    justifyContent: 'center',
+    marginBottom: 14,
+    flexWrap: 'wrap',
+  },
+  filterTab: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'transparent',
+    border: `1.5px solid ${C.border}`,
+    color: C.text,
+    borderRadius: 20,
+    padding: '6px 14px',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  filterTabActive: {
+    background: C.accent,
+    color: '#0d0d0d',
+    borderColor: C.accent,
+  },
+  filterTabDisabled: {
+    opacity: 0.35,
+    cursor: 'not-allowed',
+  },
+  filterCount: {
+    background: C.border,
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '1px 7px',
+    borderRadius: 10,
+    minWidth: 20,
+    textAlign: 'center' as const,
+  },
+  filterCountActive: {
+    background: 'rgba(13,13,13,0.25)',
+    color: '#0d0d0d',
   },
   statusBar: {
     textAlign: 'center',
